@@ -1,0 +1,64 @@
+<?xml version="1.0" ?>
+<project name="Example" xmlns:jacoco="antlib:org.jacoco.ant" basedir="." default="rebuild">
+    <!--Jacoco文件路径-->
+    <property name="jacocoantPath" value="/Users/xxx/coverge/jacoco-0.8.4/lib/jacocoant.jar"/>
+    <!--最终生成.exec文件的路径，Jacoco根据这个文件生成最终的报告-->
+    <property name="jacocoexecPath" value="/Users/xxx/.jenkins/workspace/Jacoco_Test_Web/exec/"/>
+    <!--生成覆盖率报告的路径-->
+    <property name="reportfolderPath" value="/Users/xxx/.jenkins/workspace/Jacoco_Test_Web/report/"/>
+    <!--远程tomcat服务的ip-->
+    <property name="server_ip" value="127.0.0.1"/>
+    <!--jacocoagent服务打开的端口-->
+    <property name="server_port" value="9099"/>
+    <!--源代码路径 -->
+    <property name="checkOrderSrcpath" value="/Users/xxx/.jenkins/workspace/Jacoco_Test_Web/src/main/java" />
+
+    <!--.class文件路径 -->
+    <property name="checkOrderClasspath" value="/Users/xxx/.jenkins/workspace/Jacoco_Test_Web/target/classes" />
+
+    <tstamp>
+        <format property="stime" pattern="yyyy-MM-dd_HH-mm-ss" locale="cn"/>
+    </tstamp>
+    <!--让ant知道去哪儿找Jacoco-->
+    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+        <classpath path="${jacocoantPath}" />
+    </taskdef>
+
+    <!--dump任务: 根据前面配置的ip地址和端口，访问目标tomcat服务，并生成.exec文件。-->
+    <target name="dump">
+        <jacoco:dump address="${server_ip}" reset="false" destfile="${jacocoexecPath}ExampleApiTest_${stime}.exec" port="${server_port}" append="true" dump="true"/>
+    </target>
+    <!--merge指定的.exec文件-->
+    <target name="merge_exec">
+        <jacoco:merge destfile="${jacocoexecPath}ExampleApiTest-merge.exec">
+            <fileset dir="${jacocoexecPath}" includes="ExampleApiTest*.exec" />
+        </jacoco:merge>
+    </target>
+
+    <!--jacoco任务:根据前面配置的源代码路径和.class文件路径，及merge后生成的.exec文件，生成最终的html覆盖率报告-->
+    <target name="report">
+        <delete dir="${reportfolderPath}" />
+        <mkdir dir="${reportfolderPath}" />
+        <jacoco:report>
+            <executiondata>
+                <file file="${jacocoexecPath}ExampleApiTest-merge.exec" />
+            </executiondata>
+
+            <structure name="JaCoCo Report">
+                <group name="Check Order related">
+                    <classfiles>
+                        <fileset dir="${checkOrderClasspath}" />
+                    </classfiles>
+                    <sourcefiles encoding="gbk">
+                        <fileset dir="${checkOrderSrcpath}" />
+                    </sourcefiles>
+                </group>
+            </structure>
+
+            <html destdir="${reportfolderPath}" encoding="utf-8" />
+
+        </jacoco:report>
+    </target>
+
+    <target name="rebuild" depends="dump,merge_exec,report"></target>
+</project>
